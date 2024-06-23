@@ -1,0 +1,766 @@
+---
+title: "Sentiment analysis for patient's feedback NHS"
+author: "Tatiana Hernandez"
+date: "18/06/2022"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+
+```{r}
+
+#install.packages('reshape2')
+library(reshape2)
+library(rvest)
+library(dplyr)
+library(purrr)
+#install.packages("robotstxt")
+library(robotstxt)
+#library(XML)
+library(stringr)
+library(ggplot2)
+#install.packages("writexl")
+#install.packages("rvest")
+
+library(rvest)
+library(writexl)
+library(tidyverse)
+library(tidyr)
+#install.packages('qdap')
+#library(qdap)
+#install.packages("gsubfn")
+library(gsubfn)
+#install.packages("gridExtra")
+library(gridExtra)
+#install.packages("devtools")
+library(devtools)
+#install_github("trinker/qdapDictionaries")
+#install_github("trinker/qdapRegex")
+#install_github("trinker/qdapTools")
+#install_github("trinker/qdap")
+
+library(qdapDictionaries)
+library(qdapRegex)
+library(qdapTools)
+#library(qdap)
+
+#install.packages("urltools")
+#install.packages("cld2")
+#install.packages("tm")
+#install.packages("textstem")
+#install.packages("textclean")
+#install.packages("tidytext")
+#install.packages("textstem")
+#install.packages("stringi")
+
+#install.packages("scales")
+library(scales)
+
+#install.packages('xml2')
+library(xml2)
+#library(qdap)
+library(urltools)
+library(cld2)
+library(tm)
+library(textstem)
+library(textclean)
+library(tidytext)
+library(textstem)
+library(stringi)
+
+#install.packages("tm")
+#install.packages("SnowballC")
+#install.packages("wordcloud")
+#install.packages("RColorBrewer")
+
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+library(plyr)
+
+#install.packages('textdata')
+library(textdata)
+
+# Avoid timeout
+#url = "http://google.com"
+#download.file(url, destfile = "scrapedpage.html", quiet=TRUE)
+#content <- read_html("scrapedpage.html")
+
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## 1. Scrapping "IWantGreatCare" reviews from warwick hospital A&E patients 
+
+https://www.iwantgreatcare.org/hospitals/warwick-hospital?all=1&caretype=AandE&patienttype=&page=1
+
+### Extracting all needed data AandE&patient
+
+```{r,eval=FALSE}
+
+contents <- data.frame()
+
+for (page_result in seq(from =1 , to = 1000, by = 1)) {
+  
+  link = paste0("https://www.iwantgreatcare.org/hospitals/warwick-hospital?all=1&caretype=AandE&patienttype=&page=", page_result, "#reviews")
+  page = read_html(link)
+  
+  rating = page %>% html_nodes("div.content") %>% html_node("div.review-average-container img") %>% html_attr("title")
+                                                                                        
+  date = page %>% html_nodes("div.content") %>% html_node("div.review-date") %>% html_text()
+  
+  review1 = page %>% html_nodes("div.content") %>% html_node("br+ .review-text") %>% html_text()
+  review2 = page %>% html_nodes("div.content") %>% html_node(".review-text+ .review-text") %>% html_text()
+                                                                                                                                                    
+  contents <- rbind(contents, 
+                         data.frame(rating, date, review1, review2, stringsAsFactors = FALSE))
+                                                                                       
+  print(paste("Page:", page_result))
+  
+}
+
+saveRDS(contents11, "contents11.rds")
+```
+
+```{r, eval=FALSE}
+
+
+contents1 <- data.frame()
+
+for (page_result2 in seq(from =1000 , to = 1629, by = 1)) {
+  
+  link2 = paste0("https://www.iwantgreatcare.org/hospitals/warwick-hospital?all=1&caretype=AandE&patienttype=&page=", page_result2, "#reviews")
+  page2 = read_html(link2)
+  
+  rating2 = page2 %>% html_nodes("div.content") %>% html_node("div.review-average-container img") %>% html_attr("title")
+                                                                                        
+  date2 = page2 %>% html_nodes("div.content") %>% html_node("div.review-date") %>% html_text()
+  
+  review12 = page2 %>% html_nodes("div.content") %>% html_node("br+ .review-text") %>% html_text()
+  review22 = page2 %>% html_nodes("div.content") %>% html_node(".review-text+ .review-text") %>% html_text()
+                                                                                                                                                    
+  contents2 <- rbind(contents2, 
+                         data.frame(rating2, date2, review12, review22, stringsAsFactors = FALSE))
+                                                                                       
+  print(paste("Page:", page_result2))
+  
+}
+
+saveRDS(contents1, "contents1.rds")
+```
+
+## 2.  Scrapping "IWantGreatCare" reviews from warwick hospital Paedriatics A&E patients
+
+https://www.iwantgreatcare.org/hospitals/warwick-hospital?all=1&caretype=PaedsAandE&patienttype=&page=1
+
+### Extracting all needed data PaedsAandE
+
+```{r, eval=FALSE}
+
+
+contents2 <- data.frame()
+
+for (page_result in seq(from =1 , to = 285, by = 1)) {
+  
+  link = paste0("https://www.iwantgreatcare.org/hospitals/warwick-hospital?all=1&caretype=PaedsAandE&patienttype=&page=", page_result , "#reviews")
+  page = read_html(link)
+  
+  rating = page %>% html_nodes("div.content") %>% html_node("div.review-average-container img") %>% html_attr("title")
+                                                                                        
+  date = page %>% html_nodes("div.content") %>% html_node("div.review-date") %>% html_text()
+  
+  review1 = page %>% html_nodes("div.content") %>% html_node("br+ .review-text") %>% html_text()
+  review2 = page %>% html_nodes("div.content") %>% html_node(".review-text+ .review-text") %>% html_text()
+                                                                                                                                                    
+  contents <- rbind(contents, 
+                         data.frame(rating, date, review1, review2, stringsAsFactors = FALSE))
+                                                                                       
+  print(paste("Page:", page_result))
+  
+}
+
+saveRDS(contents2, "contents2.rds")
+
+```
+
+
+```{r,eval=FALSE}
+
+
+# A&E department reviews
+
+contents_all = readRDS('contents.rds')
+contents_all1 = readRDS('contents2.rds')
+
+contents_all <- contents_all[!duplicated(contents_all), ]
+contents_all1 <- contents_all1[!duplicated(contents_all1), ]
+
+names(contents_all1)[names(contents_all1)=='rating2'] <-'rating'
+names(contents_all1)[names(contents_all1)=='date2'] <-'date'
+names(contents_all1)[names(contents_all1)=='review12'] <-'review1'
+names(contents_all1)[names(contents_all1)=='review22'] <-'review2'
+
+contents_Emergency <- rbind.data.frame(contents_all,contents_all1)
+
+contents_Emergency <- contents_Emergency[!duplicated(contents_Emergency), ]
+
+saveRDS(contents_Emergency, "contents_Emergency.rds")
+
+`PaeA&E` <- readRDS("C:/Users/Tati/Desktop/MSC BUSINESS ANALYTICS/Term 2/Text analytics/PRACTICE/PaeA&E.rds")
+
+
+`PaeA&E` <-   `PaeA&E`[!duplicated(`PaeA&E`), ]
+
+saveRDS(`PaeA&E`, "PaeA&E.rds")
+
+reviews1emergency <- contents_Emergency %>% select(rating,date,review1)
+reviews2emergency <- contents_Emergency %>% select(rating,date,review2)
+reviews1Paeemergency <- `PaeA&E` %>% select(rating,date,review1)
+reviews2Paeemergency <- `PaeA&E` %>% select(rating,date,review2)
+
+names(reviews2Paeemergency)[names(reviews2Paeemergency)=='review2'] <-'review1'
+names(reviews2emergency)[names(reviews2emergency)=='review2'] <-'review1'
+
+emergency<- rbind.data.frame(reviews1emergency,reviews2emergency)
+PAEemergency <- rbind.data.frame(reviews1Paeemergency,reviews2Paeemergency)
+```
+
+
+
+```{r}
+
+
+#################################################
+
+
+emergency <- readRDS("allreviewsemergency.rds")
+PAEemergency <- readRDS("allreviewsPAE.rds")
+
+
+
+# Data cleansing for sentiment analysis 
+
+
+emergency$rating<-gsub("Stars","",emergency$rating)
+PAEemergency$rating<-gsub("Stars","",PAEemergency$rating)
+
+
+  emergency$rating <- as.numeric(emergency$rating)
+  PAEemergency$rating <- as.numeric(PAEemergency$rating)
+  
+emergency$rating[is.na(emergency$rating)] <- 0
+
+emergency <- emergency[-c(1), ]
+
+PAEemergency$rating[is.na(PAEemergency$rating)] <- 0
+
+PAEemergency <- PAEemergency[-c(1), ]
+
+emergency$date<-gsub("th","",emergency$date)
+PAEemergency$date<-gsub("th","",PAEemergency$date)  
+emergency$date<-gsub("rt","",emergency$date)
+PAEemergency$date<-gsub("rt","",PAEemergency$date)  
+emergency$date<-gsub("st","",emergency$date)
+PAEemergency$date<-gsub("st","",PAEemergency$date) 
+emergency$date<-gsub("nd","",emergency$date)
+PAEemergency$date<-gsub("nd","",PAEemergency$date) 
+emergency$date<-gsub("rd","",emergency$date)
+PAEemergency$date<-gsub("rd","",PAEemergency$date) 
+
+emergency$date<-gsub("Augu","August",emergency$date)
+PAEemergency$date<-gsub("Augu","August",PAEemergency$date)
+
+emergency$date <- as.Date(emergency$date,
+  format = "%d %B %Y")
+
+PAEemergency$date <- as.Date(PAEemergency$date,
+  format = "%d %B %Y")
+
+
+
+# Omitting extra spaces
+
+emergency$review1 <- str_squish(emergency$review1)
+PAEemergency$review1 <- str_squish(PAEemergency$review1)
+
+# omitting hyphen 
+
+emergency$review1<-gsub("-","",emergency$review1)
+PAEemergency$review1<-gsub("-","",PAEemergency$review1)
+
+
+# Creating an identifier for each review 
+
+emergency <- data.frame(doc_id=seq(1:nrow(emergency)),emergency)
+PAEemergency <- data.frame(doc_id=seq(1:nrow(PAEemergency)),PAEemergency)
+
+
+
+#Removing numbers from data a 
+
+emergency$review1 <- gsub('[[:digit:]]+', '', emergency$review1) 
+PAEemergency$review1 <- gsub('[[:digit:]]+', '', PAEemergency$review1) 
+
+#Replacing contractions 
+
+emergency$review1 <- replace_contraction(emergency$review1)
+PAEemergency$review1 <- replace_contraction(PAEemergency$review1)
+
+#Replacing symbols 
+
+emergency$review1 <- replace_symbol(emergency$review1)
+PAEemergency$review1 <- replace_symbol(PAEemergency$review1)
+
+
+#Replacing word elongations 
+
+emergency$review1 <- replace_word_elongation(emergency$review1, impart.meaning = FALSE) 
+
+PAEemergency$review1 <- replace_word_elongation(PAEemergency$review1, impart.meaning = FALSE) 
+ 
+
+
+#Replacing incomplete sentences 
+
+emergency$review1 <- replace_incomplete(emergency$review1)
+PAEemergency$review1 <- replace_incomplete(PAEemergency$review1)
+
+#Adding missing endmark 
+
+emergency$review1 <- add_missing_endmark(emergency$review1) 
+PAEemergency$review1 <- add_missing_endmark(PAEemergency$review1) 
+
+#Removing non ascii characters 
+
+emergency$review1 <- replace_non_ascii(emergency$review1)
+
+PAEemergency$review1 <- replace_non_ascii(PAEemergency$review1)
+
+# remove punctuation
+
+emergency$review1 <- str_replace_all(emergency$review1, "[[:punct:]]", " ")
+
+PAEemergency$review1 <- str_replace_all(PAEemergency$review1, "[[:punct:]]", " ")
+
+#remove non-alphanumeric
+
+emergency$review1 <- str_replace_all(emergency$review1, "[^[:alnum:]]", " ")
+
+PAEemergency$review1 <- str_replace_all(PAEemergency$review1, "[^[:alnum:]]", " ")
+
+# Adding number of words per review 
+
+emergency  <- emergency  %>% mutate(words_in_review = str_count(review1,'\\w+'))
+PAEemergency  <- PAEemergency  %>% mutate(words_in_review = str_count(review1,'\\w+'))
+
+#Average rating 
+
+emergencydate <- emergency %>% filter(date >= "2019-01-01")
+
+verticle_line <- "2020-01-01" 
+
+ggplot(emergencydate,aes(y=rating,x=date)) + geom_line(colour=c('black'))+labs(x="Rating range 1-5 Stars",y="Average", subtitle = "Rating Average 4.53")+geom_vline(data = subset(emergencydate, date == verticle_line), mapping = aes(xintercept = date), color = 'magenta', size = 2)
+
+PAEemergencydate <- PAEemergency %>% filter(date >= "2019-01-01")
+
+
+ggplot(PAEemergency,aes(y=rating,x=date)) + geom_line(colour=c('blue'))+labs(x="Rating range 1-5 Stars",y="Average", subtitle = "Rating Average 4.53")+geom_vline(data = subset(emergencydate, date == verticle_line), mapping = aes(xintercept = date), color = 'magenta', size = 2)
+
+#Average rating
+
+hist(emergency$rating)                                   # Draw histogram
+abline(v = mean(emergency$rating),                     # Add line for median
+       col = "red",
+       lwd = 3)
+text(x= mean(emergency$rating) * 1.7,                
+     y = mean(emergency$rating) * 1.7,
+     paste("Mean =", mean(emergency$rating)),
+     col = "red",
+     cex = 2)
+  
+  
+
+hist(PAEemergency$rating)                                   # Draw histogram
+abline(v = mean(PAEemergency$rating),                     # Add line for median
+       col = "red",
+       lwd = 3)
+text(x= mean(PAEemergency$rating) * 1.7,                
+     y = mean(PAEemergency$rating) * 1.7,
+     paste("Mean =", mean(PAEemergency$rating)),
+     col = "red",
+     cex = 2)
+
+
+# Omitting 0 words reviews 
+
+emergency_reviews <- subset(emergency, words_in_review >= 1) #9263
+PAEemergency_reviews <- subset(PAEemergency, words_in_review >= 1) #967
+
+#Exploratory Data Analysis 
+
+# Review length distribution 
+
+review_length_dist <- emergency_reviews %>% ggplot(aes(words_in_review)) + geom_histogram(aes(y=..density..), fill='gold2', bins= 100) + geom_density() + labs(x="Review length",y="Number of reviews", subtitle = "Review length distribution")
+
+review_length_distPAE <- PAEemergency_reviews %>% ggplot(aes(words_in_review)) + geom_histogram(aes(y=..density..), fill='gold2', bins= 100) + geom_density() + labs(x="Review length",y="Number of reviews", subtitle = "Review length distribution")
+
+
+
+
+
+```
+
+
+
+```{r}
+
+# Selecting important columns for sentiment analysis
+
+en_data <- emergency_reviews %>% select(doc_id, review1, rating, date)
+
+en_data2 <- PAEemergency_reviews %>% select(doc_id, review1, rating, date)
+
+# Tokenize the clean data 
+
+clean_data_token<- en_data %>% unnest_tokens(word,review1)
+
+clean_data_token2 <- en_data2 %>% unnest_tokens(word,review1) 
+
+# calculate the total number of words of each text 
+
+Total_number <- clean_data_token%>% group_by(doc_id)%>% dplyr::summarise(total_number_of_words=n()) 
+Total_number 
+
+Total_number2 <- clean_data_token2%>% group_by(doc_id)%>% dplyr::summarise(total_number_of_words=n()) 
+Total_number2
+
+# Check afinn 
+
+afinn <- inner_join(clean_data_token,get_sentiments("afinn"))
+
+afinn$sentiment <- ifelse(afinn$value>0,"positive",ifelse(afinn$value<0,"negative","neutral"))
+
+afinnsentiments <- afinn %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative))
+
+afinnsentiments
+
+#check affinn2
+
+afinn2 <- inner_join(clean_data_token2,get_sentiments("afinn"))
+
+afinn2$sentiment <-ifelse(afinn2$value>0,"positive",ifelse(afinn2$value<0,"negative","neutral"))
+
+afinnsentiments2 <- afinn2 %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative))
+
+afinnsentiments2
+
+# Check bing 
+
+bing <- inner_join(clean_data_token,get_sentiments("bing")) 
+
+bing2 <- inner_join(clean_data_token2,get_sentiments("bing")) 
+
+# Sentiment score of bing 
+
+bingsentiments <- bing %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative)) 
+
+bingsentiments
+
+bingsentiments2 <- bing2 %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative)) 
+
+bingsentiments2
+
+# Check nrc 
+
+nrc <- inner_join(clean_data_token,get_sentiments("nrc")) 
+
+nrc2 <- inner_join(clean_data_token2,get_sentiments("nrc")) 
+
+# Sentiment score of nrc 
+
+nrcsentiments <- nrc%>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% filter(sentiment %in% c("positive","negative")) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative)) 
+
+nrcsentiments
+
+nrcsentiments2 <- nrc2%>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% filter(sentiment %in% c("positive","negative")) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative)) 
+
+nrcsentiments2
+
+
+# Check loughran 
+
+loughran<- inner_join(clean_data_token,get_sentiments("loughran")) 
+
+loughran2 <- inner_join(clean_data_token2,get_sentiments("loughran")) 
+
+# Sentiment score of loughran 
+
+loughransentiments <- loughran %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% filter(sentiment %in% c("positive","negative")) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative))
+
+loughransentiments
+
+loughransentiments2 <- loughran2 %>% group_by(doc_id,sentiment) %>% dplyr::summarise(total=n()) %>% filter(sentiment %in% c("positive","negative")) %>% pivot_wider(names_from=sentiment, values_from=total,values_fill=list(total=0)) %>% mutate(sentiment = (positive-negative)/(positive+negative))
+
+loughransentiments2
+
+
+# Calculate the number of positive and negative tokens can be detected by each dictionary 
+
+afinn_1<- afinn %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+bing_1<-bing%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+loughran_1<-loughran%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+nrc_1<-nrc%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+
+afinn_12<-afinn2 %>% group_by(sentiment) %>% dplyr:: summarise(total=n()) 
+
+bing_12<-bing2%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+loughran_12<-loughran2%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+nrc_12<-nrc2%>% filter(sentiment %in% c("positive","negative")) %>% group_by(sentiment) %>% dplyr::summarise(total=n()) 
+
+
+#plot the total number of positive and negative tokens respect to each dictionary
+
+evaluation<-data.frame(polarity=c('negative','positive'), afinn=afinn_1$total, bing=bing_1$total,
+                       loughran=loughran_1$total,                              nrc=nrc_1$total) 
+
+evaluation<- evaluation%>% pivot_longer(!polarity,names_to = "dictionary", values_to ="total")
+
+evaluation%>% group_by(dictionary,polarity)%>% ggplot(aes(x=dictionary,y=total))+geom_col(aes(fill=polarity),position = position_dodge2(preserve = 'single'))+geom_text(aes(label=total),position = position_dodge2(width=0.8,preserve = 'single'),vjust=-0.5,hjust=0.5)
+
+ggplot(evaluation,aes(x=dictionary,y=total))+geom_col(aes(fill=polarity))+ggtitle("Polarities of Words for Each Dictionary for emergency department") 
+
+ggsave("Polarities of Words for Each Dictionary.png")
+
+afinnsentiments$corpus_sentiment<-ifelse(afinnsentiments$sentiment>0,"positive","negative")
+bingsentiments$corpus_sentiment<-ifelse(bingsentiments$sentiment>0,"positive","negative")
+
+loughransentiments$corpus_sentiment<-ifelse(loughransentiments$sentiment>0,"positive","negative")
+
+nrcsentiments$corpus_sentiment<-ifelse(nrcsentiments$sentiment>0,"positive","negative")
+
+afinn_2<- afinnsentiments%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n()) 
+
+bing_2<- bingsentiments%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n()) 
+
+loughran_2<- loughransentiments%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n())
+
+nrc_2<- nrcsentiments%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n())
+
+######################
+evaluation2<-data.frame(polarity=c('negative','positive'), afinn=afinn_12$total, bing=bing_12$total,
+                       loughran=loughran_12$total,                              nrc=nrc_12$total) 
+
+evaluation2 <- evaluation2%>% pivot_longer(!polarity,names_to = "dictionary", values_to ="total")
+
+evaluation2%>% group_by(dictionary,polarity)%>% ggplot(aes(x=dictionary,y=total))+geom_col(aes(fill=polarity),position = position_dodge2(preserve = 'single'))+geom_text(aes(label=total),position = position_dodge2(width=0.8,preserve = 'single'),vjust=-0.5,hjust=0.5)
+
+ggplot(evaluation2,aes(x=dictionary,y=total))+geom_col(aes(fill=polarity))+ggtitle("Polarities of Words for Each Dictionary Paedriatics A&E") 
+
+ggsave("Polarities of Words for Each Dictionary2.png")
+
+afinnsentiments2$corpus_sentiment<-ifelse(afinnsentiments2$sentiment>0,"positive","negative")
+bingsentiments2$corpus_sentiment<-ifelse(bingsentiments2$sentiment>0,"positive","negative")
+
+loughransentiments2$corpus_sentiment<-ifelse(loughransentiments2$sentiment>0,"positive","negative")
+
+nrcsentiments2$corpus_sentiment<-ifelse(nrcsentiments2$sentiment>0,"positive","negative")
+
+afinn_22<- afinnsentiments2%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n()) 
+
+bing_22<- bingsentiments2%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n()) 
+
+loughran_22<- loughransentiments2%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n())
+
+nrc_22<- nrcsentiments2%>% group_by(corpus_sentiment) %>% dplyr::summarise(total=n())
+```
+
+```{r}
+
+#plot the total number of positive and negative words detected for corpus 
+
+corpus_dict<-data.frame(polarity=c('negative','positive'), afinn=afinn_2$total, bing=bing_2$total, loughran=loughran_2$total, nrc=nrc_2$total)
+
+corpus_dict<-corpus_dict%>% pivot_longer(!polarity,names_to = "dictionary", values_to ="total_number_of_corpus")
+
+corpus_dict%>% group_by(dictionary,polarity)%>% ggplot(aes(x=dictionary,y=total_number_of_corpus))+geom_col(aes(fill=polarity),position = position_dodge2(preserve = 'single'))+geom_text(aes(label=total_number_of_corpus),position = position_dodge2(width=0.8,preserve = 'single'),vjust=-0.5,hjust=0.5)
+
+ggplot(corpus_dict,aes(x=dictionary,y=total_number_of_corpus))+geom_col(aes(fill=polarity))+ggtitle("Polarities of Corpuses for Each Dictionary for emergency department") 
+
+ggsave("Polarities of Corpuses for Each Dictionary for emergency department.png") 
+
+afinnsentiments1<- left_join(afinnsentiments,Total_number,by='doc_id')
+
+afinnsentiments_coveraage <- afinnsentiments1 %>% mutate(pos_coverage=positive/total_number_of_words*100)%>% mutate(neg_coverage=negative/total_number_of_words*100)%>% mutate(coverage=(negative+positive)/total_number_of_words*100)
+
+afinnsentiments_coveraage
+
+
+##################
+
+#plot the total number of positive and negative words detected for corpus 
+
+corpus_dict2<-data.frame(polarity=c('negative','positive'), afinn=afinn_22$total, bing=bing_22$total, loughran=loughran_22$total, nrc=nrc_22$total)
+
+corpus_dict2<-corpus_dict2%>% pivot_longer(!polarity,names_to = "dictionary", values_to ="total_number_of_corpus")
+
+corpus_dict2%>% group_by(dictionary,polarity)%>% ggplot(aes(x=dictionary,y=total_number_of_corpus))+geom_col(aes(fill=polarity),position = position_dodge2(preserve = 'single'))+geom_text(aes(label=total_number_of_corpus),position = position_dodge2(width=0.8,preserve = 'single'),vjust=-0.5,hjust=0.5)
+
+ggplot(corpus_dict2,aes(x=dictionary,y=total_number_of_corpus))+geom_col(aes(fill=polarity))+ggtitle("Polarities of Corpuses for Each Dictionary for paedriatics") 
+
+ggsave("Polarities of Corpuses for Each Dictionary2 for paediatrics.png") 
+
+afinnsentiments12<- left_join(afinnsentiments2,Total_number,by='doc_id')
+
+afinnsentiments_coveraage2 <- afinnsentiments12 %>% mutate(pos_coverage=positive/total_number_of_words*100)%>% mutate(neg_coverage=negative/total_number_of_words*100)%>% mutate(coverage=(negative+positive)/total_number_of_words*100)
+
+afinnsentiments_coveraage2
+
+
+```
+
+
+
+using bing dictionary
+
+For emergency deparment
+
+```{r}
+
+
+#pre implementation of PAU
+
+bingpre <- bing %>% select(date,sentiment,word,rating)%>% filter(date >="2019-01-01" & date <= "2020-11-01")
+
+#post implementation
+
+bingpost <- bing %>% select(date,sentiment,word,rating)%>% filter(date >="2021-01-01" & date <= "2022-04-11")
+
+
+
+countwords <- count(bingpre$word)
+countwords2 <- count(bingpost$word)
+
+allwordscount_emergency <- count(bing$word)
+
+
+
+h1 <- ggplot(bingpre,aes(x=sentiment))+geom_bar(aes(y=(..count..)/sum(..count..),fill=sentiment))+ggtitle("Polarities of Words for Each Dictionary emergency department 
+pre implementation") +scale_y_continuous(labels = percent)+labs(x="Sentiment",y="Percentage")
+
+h2 <- ggplot(bingpost,aes(x=sentiment))+geom_bar(aes(y=(..count..)/sum(..count..),fill=sentiment))+ggtitle("Polarities of Words for Each Dictionary emergency department 
+post implementation") +scale_y_continuous(labels = percent)+labs(x="Sentiment",y="Percentage")
+
+grid.arrange(h1,h2)
+
+
+
+###Matrix for post
+
+words <- bingpre %>% group_by(word) %>%dplyr::summarise(count=n(),sentiment=first(sentiment))%>%arrange(count)
+
+#reshaping
+
+matrix <- acast(words,word~sentiment,value.var = 'count',fill=0)
+
+
+
+
+
+###Matrix for post
+
+words1 <- bingpost %>% group_by(word) %>%dplyr::summarise(count=n(),sentiment=first(sentiment))%>%arrange(count)
+
+#reshaping
+
+matrix1 <- acast(words1,word~sentiment,value.var = 'count',fill=0)
+
+
+
+par(mfrow=c(1,2))
+set.seed(123456)
+comparison.cloud(matrix,colors = c('black','blue'),max.words = 100)
+
+set.seed(12345689)
+comparison.cloud(matrix1,colors = c('black','blue'),max.words = 100)
+
+
+
+```
+
+
+
+for Paedriatics
+
+```{r}
+
+
+#pre implementation of PAU
+
+bingpre2 <- bing2 %>% select(date,sentiment,word,rating)%>% filter(date >="2019-01-01" & date <= "2020-11-01")
+
+#post implementation
+
+bingpost2 <- bing2 %>% select(date,sentiment,word,rating)%>% filter(date >="2021-01-01" & date <= "2022-04-11")
+
+countwords2 <- count(bingpre2$word)
+countwords22 <- count(bingpost2$word)
+
+allwordscount_emergency2 <- count(bing2$word)
+
+
+
+
+
+h12 <- ggplot(bingpre2,aes(x=sentiment))+geom_bar(aes(y=(..count..)/sum(..count..),fill=sentiment))+ggtitle("Polarities of Words for Each Dictionary paedricatics 
+pre implementation") +scale_y_continuous(labels = percent)+labs(x="Sentiment",y="Percentage")
+
+h22 <- ggplot(bingpost2,aes(x=sentiment))+geom_bar(aes(y=(..count..)/sum(..count..),fill=sentiment))+ggtitle("Polarities of Words for Each Dictionary paediatrics 
+post implementation") +scale_y_continuous(labels = percent)+labs(x="Sentiment",y="Percentage")
+
+grid.arrange(h12,h22)
+
+###Matrix for pre
+
+words4 <- bingpre2 %>% group_by(word) %>%dplyr::summarise(count=n(),sentiment=first(sentiment))%>%arrange(count)
+
+#reshaping
+
+matrix4 <- acast(words4,word~sentiment,value.var = 'count',fill=0)
+
+
+
+
+###Matrix for post
+
+words5 <- bingpost2 %>% group_by(word) %>%dplyr::summarise(count=n(),sentiment=first(sentiment))%>%arrange(count)
+
+#reshaping
+
+matrix5 <- acast(words5,word~sentiment,value.var = 'count',fill=0)
+
+par(mfrow=c(1,2))
+set.seed(123)
+comparison.cloud(matrix4,colors = c('black','blue'))
+
+set.seed(12)
+comparison.cloud(matrix5,colors = c('black','blue'))
+
+
+
+
+
+```
+
+
+
